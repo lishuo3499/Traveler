@@ -15,6 +15,7 @@ urlpatterns = [
     url(r'^friends_list/$',api_views.friends_list,name="friends_list"), 
     url(r'^all_center_fav/$',api_views.all_center_fav,name="all_center_fav"), 
     url(r'^add_friend/$',api_views.add_friend,name="add_friend"),   #添加好友
+    url(r'^share_num/$',api_views.share_num,name="share_num"),
     url(r'^new_group/$',api_views.new_group,name="new_group"),
     url(r'^edit_group/$',api_views.edit_group,name="edit_group"),
     url(r'^delete_group/$',api_views.delete_group,name="delete_group"),
@@ -31,9 +32,14 @@ urlpatterns = [
     url(r'^show_friend_video/$',api_views.show_friend_video,name="show_friend_video"),
     url(r'^upload_video/$',api_views.upload_video,name="upload_video"),
     url(r'^show_map_video/$',api_views.show_map_video,name="show_map_video"),
+
+    url(r'^login_name/$',api_views.login_name,name="login_name"),
     
-    # url(r'^search_group/$',api_views.search_group,name="search_group"),
-    # url(r'^manager_id/$',api_views.manager_id,name="manager_id"),
+    url(r'^vali_code/$',api_views.vali_code,name="vali_code"),
+    url(r'^getCode/$',api_views.getCode,name="getCode"),
+    url(r'^set_user_info/$',api_views.set_user_info,name="set_user_info"),
+    url(r'^change_user_info/$',api_views.change_user_info,name="change_user_info"),
+
 
      
 ]

@@ -11,6 +11,8 @@ import time
 import os
 import shutil
 import random
+import urllib.request
+import urllib
 class MyPageNumberPagination(PageNumberPagination):
 	#每页显示多少个
 	page_size = 10
@@ -26,7 +28,7 @@ class MyPageNumberPagination(PageNumberPagination):
 @api_view(["GET",'POST'])
 def index(request):
 	user_id = request.GET.get("id")
-	v = Video.objects.all()
+	v = Video.objects.filter(permission=1)
 	pg = MyPageNumberPagination()
 	page_roles = pg.paginate_queryset(queryset=v,request=request)
 	v = VideoSerializer(page_roles, many=True)
@@ -85,6 +87,21 @@ def del_like(request):
 	v.save()
 	return Response({"msg":"操作成功！"},status=status.HTTP_201_CREATED)
 
+@api_view(["POST"])
+def share_num(request):
+	video_id = request.POST.get("id")
+	user_id = request.POST.get("user_id")
+	send_user_id = Video.objects.get(id=video_id).user_id
+	v = Video.objects.get(id=video_id)
+	v.forwarding_num += 1
+	if int(user_id) != int(send_user_id):
+		send_notice(user_id,send_user_id,"03",video_id)
+	v.save()
+	return Response({"msg":"操作成功！"},status=status.HTTP_201_CREATED)
+
+
+
+
 
 
 #提交评论,评论数据（视频）
@@ -94,13 +111,20 @@ def video_comment(request):
 		video_id = request.POST.get("video_id")
 		user_id = request.POST.get("user_id")
 		comment = request.POST.get("comment")
+		video_data =Video.objects.filter(id=video_id)
+		video_data.update(comment_num=video_data[0].comment_num+1)  #评论数加1
 		c = Comment.objects.create(video_id=video_id,user_id=user_id,comment=comment,created_time=time.time())
-		admin_id = Video.objects.get(id=video_id).user_id
-		send_notice(user_id,admin_id,"4",c.id,content=comment)
+		admin_id = video_data[0].user_id
+		print(admin_id)
+		send_notice(user_id,admin_id,"4",c.id,video_id,content=comment)
 		return Response({"msg":"操作成功！"},status=status.HTTP_201_CREATED)
 	elif request.method == 'GET':
 		video_id_p = request.GET.get("video_id")
+		page_p = int(request.GET.get("page"))
 		comment = Comment.objects.filter(video_id=video_id_p)
+		if page_p>len(comment)/6 and page_p!=1 :
+			print('超出页数')
+			return Response({'status':'last'},status=status.HTTP_201_CREATED)
 		pg = MyPageNumberPagination()
 		page_roles = pg.paginate_queryset(queryset=comment,request=request)
 		comment = CommentSerializer(page_roles, many=True)
@@ -300,7 +324,7 @@ def delete_one_group_one_user(request):
 	else:
 		return Response({"msg":"无权操作！"})
 
-def send_notice(send_user_id,receive_user_id,notice_type,other_id,content=""):
+def send_notice(send_user_id,receive_user_id,notice_type,other_id,obj_id=1,content=""):
 	notice = Notice.objects.create(
 				content=content,
 				send_user=UserInfo.objects.get(id=send_user_id),
@@ -320,6 +344,7 @@ def send_notice(send_user_id,receive_user_id,notice_type,other_id,content=""):
 		notice.group = Group.objects.get(id=other_id)
 	elif notice_type == "4":
 		notice.comment = Comment.objects.get(id=other_id)
+		notice.video = Video.objects.get(id=obj_id)
 	notice.save()
 
 
@@ -425,8 +450,9 @@ def show_map_video(request):
 # 	search['user'] = usergroup
 # 	return Response(search,status=status.HTTP_201_CREATED)
 
-#视频上传
+from django.views.decorators.csrf import csrf_exempt
 @api_view(["POST"])
+@csrf_exempt
 def upload_video(request):
 	file_name = int(time.time())
 	random_num = random.randint(0, 10000)
@@ -439,6 +465,9 @@ def upload_video(request):
 	user_id = request.POST.get("user_id")
 	music_id = request.POST.get("music_id")
 	travelsnote_id = request.POST.get("travelsnote_id")
+	food = request.POST.get("food")
+	traffic = request.POST.get("traffic")
+	docm = request.POST.get("docm")
 	video = request.FILES.getlist('file')
 	video[0].name = '%s%s.mp4'%(file_name,random_num)
 	video[1].name = '%s%s.png'%(file_name,random_num)
@@ -461,8 +490,167 @@ def upload_video(request):
 	new_img.permission = permission
 	new_img.user_id = user_id
 	new_img.music_id = music_id
+	new_img.food = food
+	new_img.traffic = traffic
+	new_img.docm = docm
 	new_img.travelsnote_id = travelsnote_id
 	new_img.save()
 	shutil.move("C:\\Users\\Administrator\\Desktop\\APP\\Traveler\\media\\media\\video\\%s"%(video[0].name),"C:\\nginx-1.14.0\\html\\html\\video")
 	shutil.move("C:\\Users\\Administrator\\Desktop\\APP\\Traveler\\media\\media\\img\\%s"%(video[1].name),"C:\\nginx-1.14.0\\html\\html\\image")
 	return Response({"msg":"操作成功！"},status=status.HTTP_201_CREATED)
+
+
+
+from django.contrib.auth import authenticate, login, logout  # 用户
+@api_view(["POST","GET"])
+def login_name(request):
+    username = request.GET['phone']
+    password = request.GET['password']
+    user = authenticate(username=username, password=password)
+    if user is not None:
+        login(request, user)
+        user_data = UserInfoSerializer(user).data
+        return Response({'status':0,'msg':'登陆成功','user':user_data})
+    else:
+        return Response({'status':1,'msg':'登陆失败'})
+
+
+
+# 发送验证码
+@api_view(["POST","GET"])
+def getCode(request):
+    if request.method == 'GET':
+        username = request.GET['username']
+        code = random.randint(1000, 9000)  # 验证码
+        url = 'http://118.24.53.130/SUBMAIL_PHP_SDK/SUBMAIL_PHP_SDK/demo/message_xsend_demo.php?phone=%s&code=%s' % (
+            username, code)
+        req = urllib.request.Request(url=url)
+        res_data = urllib.request.urlopen(req)
+        userinfo = UserInfo.objects.filter(username=request.GET['username'])
+        if len(userinfo) == 0:  # 用户不存在时直接新建用户 发送验证码
+            user = UserInfo.objects.create_user(
+                username=username,
+                code_num=code,
+                password='pbkdf2_sha256$100000$go5krpSu9bOA$m2QgM1q0CuYTG7uPcGnJ6+OOTiQSLfX9VvKNSge7LiY='
+            )
+            return Response({'status':1,'msg':'发送成功'})
+        else:  # 用户存在时直接修改验证码  并发送
+            userinfo[0].code_num = code
+            
+            userinfo[0].save()
+            return Response({'status':0,'msg':'发送成功'})
+
+
+
+
+@api_view(["POST","GET"])
+def vali_code(request):
+    if request.method == 'GET':
+        username = request.GET['phone']
+        code = request.GET['code']
+        userinfo = UserInfo.objects.filter(username=request.GET['phone'])
+        if userinfo[0].code_num == code:  # 判断验证码是否正确
+        	if  userinfo[0].nick_name=='' or userinfo[0].header_url==0:
+        		return Response({'status':2,'msg':'验证码正确,头像昵称未设置'})
+        	else:
+        		user = authenticate(username=username,password=userinfo[0].first_name)
+        		login(request, user)
+        		user_data = UserInfoSerializer(user).data
+        		return Response({'status':1,'msg':'验证码正确','user':user_data})
+        else:
+            return Response({'status':0,'msg':'验证码不正确'})
+        return HttpResponse(random.randint(1000, 9000))
+
+
+@api_view(["POST","GET"])
+def set_user_info(request):
+    if request.method == 'POST':
+        username = request.POST['phone']
+        password = request.POST['password']
+        nicheng = request.POST['nicheng']
+        header_url = request.POST['header_url']
+        print(request.POST)
+        userinfo = UserInfo.objects.filter(username=username)[0]
+        userinfo.set_password(password)
+        userinfo.nick_name = nicheng
+        userinfo.header_url = header_url
+        userinfo.first_name = password
+        userinfo.save()
+        user = authenticate(username=username,password=password)
+        login(request, user)
+        user_data = UserInfoSerializer(user).data
+        return Response({'status':1,'msg':'修改完成','user':user_data})
+
+
+
+@api_view(["POST","GET"])
+def change_user_info(request):
+    if request.method == 'POST':
+        birth = request.POST['birth']
+        user_id = request.POST['id']
+        sex = request.POST['sex']
+        nicheng = request.POST['nicheng']
+        desc = request.POST['desc']
+        header_url = request.POST['header_url']
+        print(request.POST)
+        userinfo = UserInfo.objects.filter(id=user_id)[0]
+        userinfo.nick_name = nicheng
+        userinfo.header_url = header_url
+        userinfo.birth = birth
+        userinfo.sex = sex
+        userinfo.desc = desc
+        userinfo.save()
+        user = authenticate(username=userinfo.username,password=userinfo.first_name)
+        login(request, user)
+        user_data = UserInfoSerializer(user).data
+        return Response({'status':1,'msg':'修改完成','user':user_data})
+   
+
+
+
+ # user = authenticate(username=username,
+ #                                password='pbkdf2_sha256$100000$go5krpSu9bOA$m2QgM1q0CuYTG7uPcGnJ6+OOTiQSLfX9VvKNSge7LiY=')
+ #            if user is not None:
+ #                user.set_password(password1)
+ #                user.save()
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

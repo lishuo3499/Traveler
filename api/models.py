@@ -31,7 +31,7 @@ class Position(models.Model):
 class Video(models.Model):
     permission = models.CharField(choices=(('private', u'仅对自己可见'), ('common', u'全部可见'), ('part_visual', '部分可见')),
                                   max_length=20, default='private', verbose_name='权限')
-    video_url = models.CharField(max_length=200, default='', verbose_name='视频地址')
+    video_url = models.CharField(max_length=2000, default='', verbose_name='视频地址')
     image_url = models.CharField(max_length=1000, default='', verbose_name='头像地址')
     send_time = models.IntegerField(default=1530080945, verbose_name='上传时间')
     user = models.ForeignKey(UserInfo, verbose_name='用户', on_delete=models.CASCADE, null=True, )
@@ -47,6 +47,9 @@ class Video(models.Model):
     position = models.ForeignKey(Position, verbose_name='Position', on_delete=models.CASCADE, null=True, )
     video_file = models.FileField(max_length=200, default='', upload_to='media/video')
     image_file = models.FileField(max_length=1000, default='', upload_to='media/img')
+    food = models.CharField(max_length=500, verbose_name='美食', default='')
+    traffic = models.CharField(max_length=500, verbose_name='交通', default='')
+    docm = models.CharField(max_length=500, verbose_name='住宿', default='')
 
 
 

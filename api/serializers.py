@@ -8,8 +8,14 @@ class UserInfoSerializer(serializers.ModelSerializer):
 		model = UserInfo
 		fields = '__all__'
 
+class PositionSerializer(serializers.ModelSerializer):
+	class Meta:
+		model = Position
+		fields = '__all__'
+
 class VideoSerializer(serializers.ModelSerializer):
 	user = UserInfoSerializer()
+	position =	PositionSerializer()		
 	class Meta:
 		model = Video
 		fields = '__all__'
@@ -57,6 +63,10 @@ class UserGroupSerializer(serializers.ModelSerializer):
 		model = UserGroup
 		fields = '__all__'
 
+class Notice_CommentSerializer(serializers.ModelSerializer):
+	class Meta:
+		model = Comment
+		fields = '__all__'
 class NoticeSerializer(serializers.ModelSerializer):
 	send_user = UserInfoSerializer()
 	video = VideoSerializer()
