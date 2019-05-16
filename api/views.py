@@ -67,7 +67,7 @@ def del_like(request):
 	send_user_id = Video.objects.get(id=video_id).user_id
 	del_bool = request.POST.get("del_like")
 	v = Video.objects.get(id=video_id)
-	if del_bool == '0':
+	if del_bool == 0:
 		v.fav_num -= 1
 		Video_Fav_user.objects.filter(video =video_id,user=user_id).delete()
 		if int(user_id) != int(send_user_id):
@@ -522,7 +522,7 @@ def getCode(request):
     if request.method == 'GET':
         username = request.GET['username']
         code = random.randint(1000, 9000)  # 验证码
-        url = 'http://118.24.53.130/SUBMAIL_PHP_SDK/SUBMAIL_PHP_SDK/demo/message_xsend_demo.php?phone=%s&code=%s' % (
+        url = 'http://114.116.165.218/SUBMAIL_PHP_SDK/demo/message_xsend_demo.php?phone=%s&code=%s' % (
             username, code)
         req = urllib.request.Request(url=url)
         res_data = urllib.request.urlopen(req)
@@ -533,11 +533,13 @@ def getCode(request):
                 code_num=code,
                 password='pbkdf2_sha256$100000$go5krpSu9bOA$m2QgM1q0CuYTG7uPcGnJ6+OOTiQSLfX9VvKNSge7LiY='
             )
+            print (username);
             return Response({'status':1,'msg':'发送成功'})
         else:  # 用户存在时直接修改验证码  并发送
             userinfo[0].code_num = code
             
             userinfo[0].save()
+            print (username);
             return Response({'status':0,'msg':'发送成功'})
 
 
