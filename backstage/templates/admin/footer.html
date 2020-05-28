@@ -1,0 +1,22 @@
+<footer id="fh5co-footer">
+		<p><small> <br> 
+			萌妹子&nbsp;&nbsp;&nbsp;	<a href="/copyright" target="_blank" title="">版权声明</a>
+		 <a href="" title="" target="_blank"></a>
+		</small></p>
+	</footer>
+	<script>
+		$(document).ready(function(){
+			change_el()
+		$(window).resize(function() {
+			change_el()
+		});
+		});
+		
+		function change_el(){
+			if ($(window).width()<769){
+						$('.top_nav_index').hide()
+					}else{
+						$('.top_nav_index').show()
+					}
+		}
+			</script>
